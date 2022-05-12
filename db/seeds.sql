@@ -1,27 +1,27 @@
- INSERT INTO department (name)
- VALUES ("Sales"),
-        ("Engineering"),
-        ("Finance"),
-        ("Legal");
+ INSERT INTO department (id, name)
+ VALUES (1,"Sales"),
+        (2, "Engineering"),
+        (3, "Finance"),
+        (4, "Legal");
 
 
- INSERT INTO role (title, salary, department_id)
- VALUES ("Sales Lead", "100000", 1),
-        ("Salesperson", "80000", 1),
-        ("Lead Engineer", "150000", 2),
-        ("Software Engineer", "120000", 2),
-        ("Chief Financial Officer", "160000", 3),
-        ("Accountant", "125000", 3),
-        ("Legal Team Lead", "250000", 4),
-        ("Lawyer", "190000", 4);
+ INSERT INTO role (id, title, salary, department_id)
+ VALUES (1, "Sales Lead", "100000", 1),
+        (2, "Salesperson", "80000", 1),
+        (3, "Lead Engineer", "150000", 2),
+        (4, "Software Engineer", "120000", 2),
+        (5, "Chief Financial Officer", "160000", 3),
+        (6, "Accountant", "125000", 3),
+        (7, "Legal Team Lead", "250000", 4),
+        (8, "Lawyer", "190000", 4);
  
 
- INSERT INTO employee (first_name, last_name, role_id, manager_id)
- VALUES ("Aerith", "Gainsborough", 7, NULL),
-        ("CMOT", "Dibbler", 8, 7),
-        ("Tony", "Stark", 3, NULL),
-        ("Katie 'Pidge' ", "Holt", 2, 3),
-        ("Seto", "Kaiba", 5, NULL),
-        ("Skyler", "White", 6, 5),
-        ("Miles", "Edgeworth", 1, NULL),
-        ("Phoenix", "Wright", 4, 1);
+ INSERT INTO employee (id, first_name, last_name, role_id, manager_id)
+ VALUES (1, "Aerith", "Gainsborough", 7, NULL),
+        (2, "Cmot", "Dibbler", 8, 1),
+        (3, "Tony", "Stark", 3, NULL),
+        (4, "Katie 'Pidge' ", "Holt", 2, 3),
+        (5, "Seto", "Kaiba", 5, NULL),
+        (6, "Skyler", "White", 6, 5),
+        (7, "Miles", "Edgeworth", 1, NULL),
+        (8, "Phoenix", "Wright", 4, 7);
