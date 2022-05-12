@@ -3,10 +3,9 @@ const express = require("express");
 const inquirer = require("inquirer");
 const mysql = require("mysql2");
 const consoleTable = require("console.table");
+
+//require dotenv package to keep sql access credentials secure
 require('dotenv').config()
-
-console.log(process.env)
-
 
 //Setting up port
 const PORT = process.env.PORT || 3001;
