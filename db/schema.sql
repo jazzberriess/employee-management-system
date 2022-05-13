@@ -28,7 +28,12 @@ CREATE TABLE employee (
     ON DELETE SET NULL,
 
     manager_id INT,
+    -- //look into the concept of indexing/ add a constraint on the manager id
     FOREIGN KEY (manager_id)
     REFERENCES employee(id)
     ON DELETE SET NULL
+
+-- MAYBE ADD THIS INSTEAD OF THE STUFF ON LINES 26-28 AND 32-33???
+    -- CONSTRAINT fk_role FOREIGN KEY (role_id) REFERENCES role(id),
+    -- CONSTRAINT fk_manager FOREIGN KEY (manager_id) REFERENCES employee(id) ON DELETE SET NULL,
 );
