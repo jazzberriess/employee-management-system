@@ -1,38 +1,12 @@
-//Required modules - don't need express!
+//Required modules
 
 const inquirer = require("inquirer");
-const db = require("./config/connection");
-// const inquirerPrompts = require("./src/helpers/inquirer");
-// const mysql = require("mysql2");
-const viewAllDepartments = require("./src/helpers/queries")
-
+const { viewAllDepartments, viewAllRoles } = require("./src/helpers/queries")
 //dont need to require - just use like you would a console.log
-// const consoleTable = require("console.table");
+
 
 //require dotenv package to keep sql access credentials secure
 require('dotenv').config();
-
-//Setting up port
-// const PORT = process.env.PORT || 3001;
-
-// const db = mysql.createConnection(
-
-//     {
-//         host: 'localhost',
-//         user: 'root',
-//         password: process.env.DB_PASSWORD,
-//         database: "employees_db",
-//     },
-//     console.log("Connected to the employees_db database.")
-
-// );
-
-//Setting variable for express
-// const app = express();
-
-//Express middleware to read JSON and urlencoded
-// app.use(express.urlencoded({ extended: false }));
-// app.use(express.json());
 
 const askQuestions = () => {
     inquirer
@@ -54,17 +28,13 @@ const askQuestions = () => {
         .then((answer) => {
             switch (answer.chooseOption) {
                 case "View all deaprtments.":
+                    //function to view departments - query to view departments.
                     viewAllDepartments();
-                    // db.query("SELECT * FROM departments", function (err, results) {
-                    //     if (err) {
-                    //         console.error(err)
-                    //     } else {
-                    //         console.log(results)
-                    //     }
-                    // });
-
                     break;
-                //function to view departments - query to view departments.
+
+                case "View all roles.":
+                    viewAllRoles();
+                    break;
                 default: console.log("Default")
             }
             // if (answer.chooseOption === "View all deaprtments.") {
