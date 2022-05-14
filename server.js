@@ -1,22 +1,33 @@
 //Required modules
 
 const inquirer = require("inquirer");
-const { viewAllDepartments,
-    viewAllRoles,
-    viewAllEmployees,
-    addDepartment,
-} = require("./src/helpers/queries")
+// const {
+//     viewAllDepartments,
+//     viewAllRoles,
+//     viewAllEmployees,
+//     addDepartment,
+//     addRole,
+//     addEmployee,
+// } = require("./src/helpers/queries");
 
-const { addDepartmentQ } = require("./src/helpers/inquirer")
+const db = require("./config/connection");
+const mysql = require("mysql2");
+
+
+// const { addDepartmentQ } = require("./src/helpers/inquirer")
 //dont need to require - just use like you would a console.log
 
 
 //require dotenv package to keep sql access credentials secure
 require('dotenv').config();
 
-// const askQuestions = () => {
-function askQuestions() {
-    inquirer
+// let allDepts = [];
+// let allDeptsNames = allDepts.name;
+
+const askQuestions = async () => {
+    // function askQuestions() {
+
+    await inquirer
         .prompt([
             {
                 type: "list",
@@ -26,8 +37,8 @@ function askQuestions() {
                     "View all roles.",
                     "View all employees.",
                     "Add a department.",
-                    // "Add a role.",
-                    // "Add an employee.",
+                    "Add a role.",
+                    "Add an employee.",
                     // "Update an employee.",
                     "Quit."],
             }])
@@ -37,10 +48,12 @@ function askQuestions() {
                 case "View all deaprtments.":
                     //function to view departments - query to view departments.
                     viewAllDepartments();
+                    askQuestions;
                     break;
 
                 case "View all roles.":
                     viewAllRoles();
+                    askQuestions();
                     break;
 
                 case "View all employees.":
@@ -50,6 +63,14 @@ function askQuestions() {
                 case "Add a department.":
                     addDepartmentQ();
                     break;
+
+                case "Add a role.":
+                    addRoleQ();
+                    break;
+
+                case "Add an employee.":
+                    addEmployeeQ();
+                    break;
                 default: console.log("Default")
             }
 
@@ -57,13 +78,238 @@ function askQuestions() {
         .catch((error) => console.error(error))
 };
 
+const addDepartmentQ = () => {
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                name: "departmentName",
+                message: "What is the Department Name?",
+                validate: (deptQAnswer) => {
+                    if (!deptQAnswer) {
+                        return ("Please enter the department name.")
+                    }
+                    return true;
+                }
 
+            }])
+        //switch case?
+        .then((deptQAnswer) => {
+            departmentsArray.push(deptQAnswer);
+            addDepartment(deptQAnswer);
+        })
+        .catch((error) => console.error(error))
+};
 
+const addRoleQ = async () => {
 
+    // getDepartments();
+    // console.log(allDepts);
+    // // console.log(allDeptsNames);
+    let deptName = ["Legal"];
 
-askQuestions();
+    await inquirer
+        .prompt([
+            {
+                type: "input",
+                name: "roleName",
+                message: "What is the name of the role?",
+                validate: (roleQAnswer) => {
+                    if (!roleQAnswer) {
+                        return ("Please enter the role name.")
+                    }
+                    return true;
+                }
+            },
+            {
+                type: "input",
+                name: "roleSalary",
+                message: "What is the salary for this role?",
+                validate: (roleQAnswer) => {
+                    if (!roleQAnswer) {
+                        return ("Please enter the salary.")
+                    }
+                    return true;
+                }
+            },
+            {
+                type: "list",
+                name: "chooseDepts",
+                message: "Which department does this role belong to?",
 
-module.exports = askQuestions;
+                //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
+                choices: deptName,
+            }])
+        //switch case?
+        .then((roleQAnswer) => {
+            addRole(roleQAnswer);
+        })
+        .catch((error) => console.error(error))
+};
+
+const addEmployeeQ = async () => {
+
+    // getDepartments();
+    // console.log(allDepts);
+    // // console.log(allDeptsNames);
+    let deptName = ["Legal"];
+
+    await inquirer
+        .prompt([
+            {
+                type: "input",
+                name: "employeeFirstName",
+                message: "What is the first name of the employee?",
+                validate: (employeeQAnswer) => {
+                    if (!employeeQAnswer) {
+                        return ("Please enter the employee's first name.")
+                    }
+                    return true;
+                }
+            },
+            {
+                type: "input",
+                name: "employeeLastName",
+                message: "What is the last name of the employee?",
+                validate: (employeeQAnswer) => {
+                    if (!employeeQAnswer) {
+                        return ("Please enter the employee's last name.")
+                    }
+                    return true;
+                }
+            },
+            {
+                type: "input",
+                name: "employeeManagerName",
+                message: "Who is the employee's manager?",
+                validate: (employeeQAnswer) => {
+                    if (!employeeQAnswer) {
+                        return ("Please enter the manager's name")
+                    }
+                    return true;
+                }
+            }])
+        //switch case?
+        .then((employeeQAnswer) => {
+            addEmployee(employeeQAnswer);
+        })
+        .catch((error) => console.error(error))
+};
+
+// askQuestions();
+
+// function getDepartments() {
+
+//     db.query("SELECT * FROM department", function (err, results) {
+//         if (err) {
+//             console.error(err)
+//         } else {
+//             allDepts.push(results);
+//             allDepts.push(results.name);
+//             console.log(allDepts);
+//             console.log(allDeptsNames);
+//         }
+//     }
+//     )
+// }
+// return allDepts;
+
+function viewAllDepartments() {
+    db.query("SELECT * FROM department", function (err, results) {
+
+        err ? console.err : console.table(results);
+
+        showQuestions();
+    }
+    )
+};
+
+function viewAllRoles() {
+    db.query("SELECT * FROM role", function (err, results) {
+        if (err) {
+            console.error(err)
+        } else {
+            console.table(results)
+            showQuestions();
+        }
+    });
+};
+
+function viewAllEmployees() {
+    db.query("SELECT * FROM employee", function (err, results) {
+        if (err) {
+            console.error(err)
+        } else {
+            console.table(results)
+            showQuestions();
+        }
+    });
+};
+
+function addDepartment(deptQAnswer) {
+    console.log(deptQAnswer);
+    const sqlQuery = `INSERT INTO department (name)
+    VALUES (?)`;
+    const params = deptQAnswer.departmentName;
+    db.query(sqlQuery, params, function (err, results) {
+        if (err) {
+            console.error(err)
+        } else {
+            console.table(results);
+            showQuestions();
+        }
+    });
+};
+
+function addRole(roleQAnswer) {
+    console.log(roleQAnswer);
+    const sqlQuery = `INSERT INTO role (id, title, salary, department_id)
+    VALUES (?, ?, ? , ?)`;
+    const roleParams = [null, roleQAnswer.roleName, roleQAnswer.roleSalary, 4];
+    // const params = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts];
+    // const params = [null, "Customer Service", 60000, null];
+    console.log(roleParams);
+    db.query(sqlQuery, roleParams, function (err, results) {
+        if (err) {
+            console.error(err)
+        } else {
+            console.table(results);
+            showQuestions();
+        }
+    });
+
+};
+
+function addEmployee(employeeQAnswer) {
+    console.log(employeeQAnswer);
+    const sqlQuery = `INSERT INTO employee (id, first_name, last_name, role_id)
+    VALUES (?, ?, ?, ?)`;
+    const employeeParams = [null, employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, null];
+    console.log(employeeParams);
+    db.query(sqlQuery, employeeParams, function (err, results) {
+        if (err) {
+            console.error(err)
+        } else {
+            console.table(results);
+            showQuestions();
+        }
+    });
+};
+const showQuestions = () => {
+    return init();
+}
+
+const init = () => {
+    askQuestions();
+}
+
+init();
+
+module.exports = {
+    showQuestions,
+    // askQuestions,
+}
+
 
 //Listening for the server
 // app.listen(PORT, () => {
