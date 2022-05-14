@@ -9,9 +9,12 @@ const inquirer = require("inquirer");
 //     addRole,
 //     addEmployee,
 // } = require("./src/helpers/queries");
+const util = require('util');
 
 const db = require("./config/connection");
 const mysql = require("mysql2");
+
+// const consoleTable = require("console.table");
 
 
 // const { addDepartmentQ } = require("./src/helpers/inquirer")
@@ -39,7 +42,7 @@ const askQuestions = async () => {
                     "Add a department.",
                     "Add a role.",
                     "Add an employee.",
-                    // "Update an employee.",
+                    // "Update an employee's role.",
                     "Quit."],
             }])
         //switch case?
@@ -48,12 +51,12 @@ const askQuestions = async () => {
                 case "View all deaprtments.":
                     //function to view departments - query to view departments.
                     viewAllDepartments();
-                    askQuestions;
+                    // askQuestions;
                     break;
 
                 case "View all roles.":
                     viewAllRoles();
-                    askQuestions();
+                    // askQuestions();
                     break;
 
                 case "View all employees.":
@@ -95,21 +98,37 @@ const addDepartmentQ = () => {
             }])
         //switch case?
         .then((deptQAnswer) => {
-            departmentsArray.push(deptQAnswer);
+            // departmentsArray.push(deptQAnswer);
             addDepartment(deptQAnswer);
         })
         .catch((error) => console.error(error))
 };
 
-const addRoleQ = async () => {
+const addRoleQ = () => {
 
-    // getDepartments();
-    // console.log(allDepts);
-    // // console.log(allDeptsNames);
-    let deptName = ["Legal"];
+    let deptNames = [];
 
-    await inquirer
-        .prompt([
+    db.promise().query(`SELECT name AS dept_name FROM department`)
+        .then((results) => {
+
+            console.log(results)
+
+            deptNames = results;
+            // for (let i = 0; i < results.length; i++) {
+            //     deptNames = results;
+            //     // return deptNames;
+
+            // }
+
+            console.log(deptNames, "line 117")
+            // console.log(deptNames)
+
+            // deptNames.push(results);
+            // deptNames = results;
+            // console.log(deptNames);
+        })
+
+        .then((inquirer.prompt)([
             {
                 type: "input",
                 name: "roleName",
@@ -129,7 +148,9 @@ const addRoleQ = async () => {
                     if (!roleQAnswer) {
                         return ("Please enter the salary.")
                     }
+                    console.log(deptNames)
                     return true;
+
                 }
             },
             {
@@ -138,24 +159,30 @@ const addRoleQ = async () => {
                 message: "Which department does this role belong to?",
 
                 //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
-                choices: deptName,
+                choices: deptNames,
             }])
-        //switch case?
-        .then((roleQAnswer) => {
-            addRole(roleQAnswer);
-        })
+            //switch case?
+            .then((roleQAnswer) => {
+                addRole(roleQAnswer);
+            }))
         .catch((error) => console.error(error))
 };
 
 const addEmployeeQ = async () => {
 
-    // getDepartments();
-    // console.log(allDepts);
-    // // console.log(allDeptsNames);
-    let deptName = ["Legal"];
+    let getRoles = [];
+    db.promise().query(`SELECT title FROM role`)
+        .then(([title]) => {
 
-    await inquirer
-        .prompt([
+            for (let i = 0; i < title.length; i++) {
+                getRoles.push(Object.values(title));
+
+            }
+            console.log(title, "line 203")
+            // console.log(getRoles, "line 205");
+
+        }),
+        await inquirer.prompt([
             {
                 type: "input",
                 name: "employeeFirstName",
@@ -175,8 +202,17 @@ const addEmployeeQ = async () => {
                     if (!employeeQAnswer) {
                         return ("Please enter the employee's last name.")
                     }
+                    console.log(getRoles);
                     return true;
                 }
+            },
+            {
+                type: "list",
+                name: "chooseRole",
+                message: `What is their role?`,
+
+                //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
+                choices: Object.values(getRoles),
             },
             {
                 type: "input",
@@ -189,34 +225,19 @@ const addEmployeeQ = async () => {
                     return true;
                 }
             }])
-        //switch case?
-        .then((employeeQAnswer) => {
-            addEmployee(employeeQAnswer);
-        })
-        .catch((error) => console.error(error))
+
+            //switch case?
+            .then((employeeQAnswer) => {
+                console.log(employeeQAnswer);
+                addEmployee(employeeQAnswer);
+            })
+            .catch((error) => console.error(error))
 };
-
-// askQuestions();
-
-// function getDepartments() {
-
-//     db.query("SELECT * FROM department", function (err, results) {
-//         if (err) {
-//             console.error(err)
-//         } else {
-//             allDepts.push(results);
-//             allDepts.push(results.name);
-//             console.log(allDepts);
-//             console.log(allDeptsNames);
-//         }
-//     }
-//     )
-// }
-// return allDepts;
 
 function viewAllDepartments() {
     db.query("SELECT * FROM department", function (err, results) {
-
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
 
         showQuestions();
@@ -226,24 +247,24 @@ function viewAllDepartments() {
 
 function viewAllRoles() {
     db.query("SELECT * FROM role", function (err, results) {
-        if (err) {
-            console.error(err)
-        } else {
-            console.table(results)
-            showQuestions();
-        }
-    });
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err : console.table(results);
+
+        showQuestions();
+    }
+    )
 };
 
 function viewAllEmployees() {
     db.query("SELECT * FROM employee", function (err, results) {
-        if (err) {
-            console.error(err)
-        } else {
-            console.table(results)
-            showQuestions();
-        }
-    });
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err : console.table(results);
+
+        showQuestions();
+    }
+    )
 };
 
 function addDepartment(deptQAnswer) {
@@ -252,32 +273,31 @@ function addDepartment(deptQAnswer) {
     VALUES (?)`;
     const params = deptQAnswer.departmentName;
     db.query(sqlQuery, params, function (err, results) {
-        if (err) {
-            console.error(err)
-        } else {
-            console.table(results);
-            showQuestions();
-        }
-    });
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err : console.table(results);
+
+        showQuestions();
+    }
+    )
 };
 
 function addRole(roleQAnswer) {
     console.log(roleQAnswer);
     const sqlQuery = `INSERT INTO role (id, title, salary, department_id)
     VALUES (?, ?, ? , ?)`;
-    const roleParams = [null, roleQAnswer.roleName, roleQAnswer.roleSalary, 4];
+    const roleParams = [null, roleQAnswer.roleName, roleQAnswer.roleSalary, null];
     // const params = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts];
     // const params = [null, "Customer Service", 60000, null];
     console.log(roleParams);
     db.query(sqlQuery, roleParams, function (err, results) {
-        if (err) {
-            console.error(err)
-        } else {
-            console.table(results);
-            showQuestions();
-        }
-    });
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err : console.table(results);
 
+        showQuestions();
+    }
+    )
 };
 
 function addEmployee(employeeQAnswer) {
@@ -287,14 +307,26 @@ function addEmployee(employeeQAnswer) {
     const employeeParams = [null, employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, null];
     console.log(employeeParams);
     db.query(sqlQuery, employeeParams, function (err, results) {
-        if (err) {
-            console.error(err)
-        } else {
-            console.table(results);
-            showQuestions();
-        }
-    });
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err : console.table(results);
+
+        showQuestions();
+    }
+    )
 };
+
+// function updateEmployeeRole() {
+//     db.query("UPDATE role FROM department", function (err, results) {
+//         //UNCOMMENT AFTER YOU'RE DONE TESTING
+//         // err ? console.err : console.table(`\n`, results, `\n`);
+//         err ? console.err : console.table(results);
+
+//         showQuestions();
+//     }
+//     )
+// };
+
 const showQuestions = () => {
     return init();
 }
