@@ -13,6 +13,7 @@ const util = require('util');
 
 const db = require("./config/connection");
 const mysql = require("mysql2");
+const { title } = require("process");
 
 // const consoleTable = require("console.table");
 
@@ -106,134 +107,144 @@ const addDepartmentQ = () => {
 
 const addRoleQ = () => {
 
-    let deptNames = [];
+    db.promise().query(`SELECT * FROM department`)
+        .then(([rows]) => {
 
-    db.promise().query(`SELECT name AS dept_name FROM department`)
-        .then((results) => {
+            // console.log(results)
 
-            console.log(results)
+            let departments = rows;
+            const departmentChoices = departments.map(({ id, name }) => ({
+                name: name,
+                value: id
+            }));
 
-            deptNames = results;
-            // for (let i = 0; i < results.length; i++) {
-            //     deptNames = results;
-            //     // return deptNames;
+            // console.log(departmentChoices, "line 117")
 
-            // }
+            inquirer.prompt([
+                {
+                    type: "input",
+                    name: "roleName",
+                    message: "What is the name of the role?",
+                    validate: (roleQAnswer) => {
+                        if (!roleQAnswer) {
+                            return ("Please enter the role name.")
+                        }
+                        return true;
+                    }
+                },
+                {
+                    type: "input",
+                    name: "roleSalary",
+                    message: "What is the salary for this role?",
+                    validate: (roleQAnswer) => {
+                        if (!roleQAnswer) {
+                            return ("Please enter the salary.")
+                        }
+                        return true;
 
-            console.log(deptNames, "line 117")
-            // console.log(deptNames)
+                    }
+                },
+                {
+                    type: "list",
+                    name: "chooseDepts",
+                    message: "Which department does this role belong to?",
 
-            // deptNames.push(results);
-            // deptNames = results;
-            // console.log(deptNames);
+                    //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
+                    choices: departmentChoices,
+                }])
+                //switch case?
+                .then((roleQAnswer) => {
+                    addRole(roleQAnswer);
+                })
+                .catch((error) => console.error(error))
         })
-
-        .then((inquirer.prompt)([
-            {
-                type: "input",
-                name: "roleName",
-                message: "What is the name of the role?",
-                validate: (roleQAnswer) => {
-                    if (!roleQAnswer) {
-                        return ("Please enter the role name.")
-                    }
-                    return true;
-                }
-            },
-            {
-                type: "input",
-                name: "roleSalary",
-                message: "What is the salary for this role?",
-                validate: (roleQAnswer) => {
-                    if (!roleQAnswer) {
-                        return ("Please enter the salary.")
-                    }
-                    console.log(deptNames)
-                    return true;
-
-                }
-            },
-            {
-                type: "list",
-                name: "chooseDepts",
-                message: "Which department does this role belong to?",
-
-                //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
-                choices: deptNames,
-            }])
-            //switch case?
-            .then((roleQAnswer) => {
-                addRole(roleQAnswer);
-            }))
-        .catch((error) => console.error(error))
 };
 
 const addEmployeeQ = async () => {
 
-    let getRoles = [];
-    db.promise().query(`SELECT title FROM role`)
+    db.promise().query(`SELECT title FROM role;`)
         .then(([title]) => {
+            console.log(title);
+            let roleTitles = title;
 
-            for (let i = 0; i < title.length; i++) {
-                getRoles.push(Object.values(title));
+            const roleChoices = roleTitles.map(({ name, title }) => ({
+                name: name,
+                value: title,
+            }))
+            db.promise().query(`SELECT first_name FROM employee WHERE manager_id IS NULL;`)
+                .then(([manager]) => {
+                    console.log(roleChoices);
+                    console.log(manager);
+                    let managerName = manager;
 
-            }
-            console.log(title, "line 203")
-            // console.log(getRoles, "line 205");
+                    const managerChoices = managerName.map(({ first_name }) => ({
+                        name: first_name,
+                        value: first_name,
+                    }))
 
-        }),
-        await inquirer.prompt([
-            {
-                type: "input",
-                name: "employeeFirstName",
-                message: "What is the first name of the employee?",
-                validate: (employeeQAnswer) => {
-                    if (!employeeQAnswer) {
-                        return ("Please enter the employee's first name.")
-                    }
-                    return true;
-                }
-            },
-            {
-                type: "input",
-                name: "employeeLastName",
-                message: "What is the last name of the employee?",
-                validate: (employeeQAnswer) => {
-                    if (!employeeQAnswer) {
-                        return ("Please enter the employee's last name.")
-                    }
-                    console.log(getRoles);
-                    return true;
-                }
-            },
-            {
-                type: "list",
-                name: "chooseRole",
-                message: `What is their role?`,
 
-                //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
-                choices: Object.values(getRoles),
-            },
-            {
-                type: "input",
-                name: "employeeManagerName",
-                message: "Who is the employee's manager?",
-                validate: (employeeQAnswer) => {
-                    if (!employeeQAnswer) {
-                        return ("Please enter the manager's name")
-                    }
-                    return true;
-                }
-            }])
+                    // db.promise().query(`SELECT first_name FROM employee WHERE manager_id IS NULL;`)
+                    //     .then(([manager]) => {
+                    //         console.log(manager);
+                    //         let managerName = manager;
+                    //         const managerChoices = managerName.map(({ name, manager }) => ({
+                    //             name: name,
+                    //             value: manager,
+                    //         }))
 
-            //switch case?
-            .then((employeeQAnswer) => {
-                console.log(employeeQAnswer);
-                addEmployee(employeeQAnswer);
-            })
-            .catch((error) => console.error(error))
+                    console.log(title, "line 203"),
+                        console.log(manager, "line 182");
+                    // console.log(getRoles, "line 205");
+
+
+                    inquirer.prompt([
+                        {
+                            type: "input",
+                            name: "employeeFirstName",
+                            message: "What is the first name of the employee?",
+                            validate: (employeeQAnswer) => {
+                                if (!employeeQAnswer) {
+                                    return ("Please enter the employee's first name.")
+                                }
+                                return true;
+                            }
+                        },
+                        {
+                            type: "input",
+                            name: "employeeLastName",
+                            message: "What is the last name of the employee?",
+                            validate: (employeeQAnswer) => {
+                                if (!employeeQAnswer) {
+                                    return ("Please enter the employee's last name.")
+                                }
+                                console.log(managerChoices);
+                                return true;
+                            }
+                        },
+                        {
+                            type: "list",
+                            name: "chooseRole",
+                            message: `What is their role?`,
+
+                            //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
+                            choices: roleChoices,
+                        },
+                        {
+                            type: "list",
+                            name: "employeeManagerName",
+                            message: "Who is the employee's manager?",
+                            choices: managerChoices,
+                        }])
+
+                        //switch case?
+                        .then((employeeQAnswer) => {
+                            console.log(employeeQAnswer);
+                            addEmployee(employeeQAnswer);
+                        })
+                        .catch((error) => console.error(error))
+                })
+        })
 };
-
 function viewAllDepartments() {
     db.query("SELECT * FROM department", function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
