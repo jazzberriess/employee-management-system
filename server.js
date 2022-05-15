@@ -9,11 +9,11 @@ const inquirer = require("inquirer");
 //     addRole,
 //     addEmployee,
 // } = require("./src/helpers/queries");
-const util = require('util');
+// const util = require('util');
 
 const db = require("./config/connection");
-const mysql = require("mysql2");
-const { title } = require("process");
+// const mysql = require("mysql2");
+// const { title } = require("process");
 
 // const consoleTable = require("console.table");
 
@@ -160,7 +160,7 @@ const addRoleQ = () => {
         })
 };
 
-const addEmployeeQ = async () => {
+const addEmployeeQ = () => {
 
     db.promise().query(`SELECT title, department_id FROM role;`)
         .then(([role]) => {
@@ -171,79 +171,65 @@ const addEmployeeQ = async () => {
                 name: title,
                 value: department_id,
             }))
-            console.log(roleChoices);
+            //This is to check that the values were pulling through correctly
+            // console.log(roleChoices);
 
             db.promise().query(`SELECT * FROM employee WHERE manager_id IS NULL;`)
                 .then(([manager]) => {
-                    // console.log(roleChoices);
-                    // console.log(manager);
+
                     let managerName = manager;
 
-                    const managerChoices = managerName.map(({ first_name, manager_id }) => ({
+                    const managerChoices = managerName.map(({ first_name, id }) => ({
                         name: first_name,
-                        value: manager_id,
+                        value: id,
                     }))
+                    managerChoices.push({ name: "None", value: null });
+                    //This is to check that the values were pulling through correctly
+                    // console.log(manager);
 
-
-                    // db.promise().query(`SELECT first_name FROM employee WHERE manager_id IS NULL;`)
-                    //     .then(([manager]) => {
-                    //         console.log(manager);
-                    //         let managerName = manager;
-                    //         const managerChoices = managerName.map(({ name, manager }) => ({
-                    //             name: name,
-                    //             value: manager,
-                    //         }))
-
-                    console.log(role, "line 203"),
-                        // console.log(manager, "line 182");
-                        // console.log(getRoles, "line 205");
-
-
-                        inquirer.prompt([
-                            {
-                                type: "input",
-                                name: "employeeFirstName",
-                                message: "What is the first name of the employee?",
-                                validate: (employeeQAnswer) => {
-                                    if (!employeeQAnswer) {
-                                        return ("Please enter the employee's first name.")
-                                    }
-                                    return true;
+                    inquirer.prompt([
+                        {
+                            type: "input",
+                            name: "employeeFirstName",
+                            message: "What is the first name of the employee?",
+                            validate: (employeeQAnswer) => {
+                                if (!employeeQAnswer) {
+                                    return ("Please enter the employee's first name.")
                                 }
-                            },
-                            {
-                                type: "input",
-                                name: "employeeLastName",
-                                message: "What is the last name of the employee?",
-                                validate: (employeeQAnswer) => {
-                                    if (!employeeQAnswer) {
-                                        return ("Please enter the employee's last name.")
-                                    }
-                                    console.log(managerChoices);
-                                    return true;
+                                return true;
+                            }
+                        },
+                        {
+                            type: "input",
+                            name: "employeeLastName",
+                            message: "What is the last name of the employee?",
+                            validate: (employeeQAnswer) => {
+                                if (!employeeQAnswer) {
+                                    return ("Please enter the employee's last name.")
                                 }
-                            },
-                            {
-                                type: "list",
-                                name: "chooseRole",
-                                message: `What is their role?`,
+                                console.log(managerChoices);
+                                return true;
+                            }
+                        },
+                        {
+                            type: "list",
+                            name: "chooseRole",
+                            message: `What is their role?`,
+                            choices: roleChoices,
+                        },
+                        {
+                            type: "list",
+                            name: "chooseManager",
+                            message: "Who is the employee's manager?",
+                            choices: managerChoices,
+                        }])
 
-                                //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
-                                choices: roleChoices,
-                            },
-                            {
-                                type: "list",
-                                name: "chooseManager",
-                                message: "Who is the employee's manager?",
-                                choices: managerChoices,
-                            }])
-
-                            //switch case?
-                            .then((employeeQAnswer) => {
-                                // console.log(employeeQAnswer);
-                                addEmployee(employeeQAnswer);
-                            })
-                            .catch((error) => console.error(error))
+                        .then((employeeQAnswer) => {
+                            //This is to check that the values were pulling through correctly
+                            // console.log(employeeQAnswer);
+                            addEmployee(employeeQAnswer);
+                        })
+                        .catch((error) => console.error(error))
                 })
         })
 };
@@ -283,22 +269,23 @@ function viewAllEmployees() {
 
 function addDepartment(deptQAnswer) {
     console.log(deptQAnswer);
-    const sqlQuery = `INSERT INTO department (name)
+    const sqlQuery = `
+    INSERT INTO department (name)
     VALUES (?)`;
     const params = deptQAnswer.departmentName;
-    db.query(sqlQuery, params, function (err, results) {
+    db.promise().query(sqlQuery, params, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
 
-        showQuestions();
-    }
-    )
+    })
+    showQuestions();
 };
 
 function addRole(roleQAnswer) {
     console.log(roleQAnswer);
-    const sqlQuery = `INSERT INTO role (title, salary, department_id)
+    const sqlQuery = `
+    INSERT INTO role (title, salary, department_id)
     VALUES (?, ? , ?);`;
     const roleParams = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts]
     // const params = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts];
@@ -316,13 +303,15 @@ function addRole(roleQAnswer) {
 
 function addEmployee(employeeQAnswer) {
     console.log(employeeQAnswer);
-    const sqlQuery = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+    const sqlQuery = `
+    INSERT INTO employee (first_name, last_name, role_id, manager_id)
     VALUES (?, ? , ?, ?);`;
     const employeeParams = [employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, employeeQAnswer.chooseRole, employeeQAnswer.chooseManager];
-    console.log(employeeParams);
+    //This is to check that the values were pulling through correctly
+    // console.log(employeeParams);
     db.promise().query(sqlQuery, employeeParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
-        console.log(results)
+        console.log(results);
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
     })
@@ -352,11 +341,4 @@ init();
 
 module.exports = {
     showQuestions,
-    // askQuestions,
 }
-
-
-//Listening for the server
-// app.listen(PORT, () => {
-//     console.log(`We're live and running the server on port ${PORT}`)
-// })
