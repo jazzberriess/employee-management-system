@@ -257,14 +257,22 @@ function viewAllRoles() {
 };
 
 function viewAllEmployees() {
-    db.query("SELECT * FROM employee", function (err, results) {
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        err ? console.err : console.table(results);
 
-        showQuestions();
-    }
-    )
+    //FIGURE OUT WHY THIS ISN'T PRINTING
+
+    db.promise().query(
+        `SELECT employee.id AS employee_id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT (m.first_name, " ", m.last_name) AS Manager
+        FROM employee
+        JOIN role ON employee.id = role.id
+        JOIN department ON department.id = role.department_id
+        LEFT JOIN employee m ON m.manager_id = employee.id;
+        `), function (err, results) {
+            console.log(results);
+            //UNCOMMENT AFTER YOU'RE DONE TESTING
+            // err ? console.err : console.table(`\n`, results, `\n`);
+            err ? console.err : console.table(results);
+        }
+    showQuestions();
 };
 
 function addDepartment(deptQAnswer) {
@@ -294,6 +302,7 @@ function addRole(roleQAnswer) {
     db.query(sqlQuery, roleParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
+        console.log(results);
         err ? console.err : console.table(results);
 
         showQuestions();
@@ -311,7 +320,7 @@ function addEmployee(employeeQAnswer) {
     // console.log(employeeParams);
     db.promise().query(sqlQuery, employeeParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
-        console.log(results);
+        console.log(results)
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
     })
