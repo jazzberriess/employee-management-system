@@ -43,7 +43,7 @@ const askQuestions = async () => {
                     "Add a department.",
                     "Add a role.",
                     "Add an employee.",
-                    // "Update an employee's role.",
+                    "Update an employee's role.",
                     "Quit."],
             }])
         //switch case?
@@ -74,6 +74,10 @@ const askQuestions = async () => {
 
                 case "Add an employee.":
                     addEmployeeQ();
+                    break;
+
+                case "Update an employee's role.":
+                    updateRoleQ();
                     break;
                 default: console.log("Default")
             }
@@ -234,6 +238,59 @@ const addEmployeeQ = () => {
         })
 };
 
+const updateRoleQ = () => {
+
+    db.promise().query(`
+    SELECT id,
+    CONCAT (first_name, " ", last_name) AS name 
+    FROM employee;`)
+        .then(([employeeName]) => {
+            console.log(employeeName);
+            let employeeNameList = employeeName;
+
+            const nameChoices = employeeNameList.map(({ name, id }) => ({
+                name: name,
+                value: id,
+            }))
+            console.log(nameChoices);
+
+            db.promise().query(`SELECT * FROM role;`)
+                .then(([role]) => {
+                    console.log(role);
+                    let roleIds = role;
+
+                    const updatedRoleChoices = roleIds.map(({ title, id }) => ({
+                        name: title,
+                        value: id,
+                    }))
+                    //This is to check that the values were pulling through correctly
+                    console.log(updatedRoleChoices);
+
+                    inquirer.prompt([
+
+                        {
+                            type: "list",
+                            name: "chooseEmployee",
+                            message: `Which employee's role do you want to update?`,
+                            choices: nameChoices,
+                        },
+                        {
+                            type: "list",
+                            name: "updateRole",
+                            message: "What is their new role?",
+                            choices: updatedRoleChoices,
+                        }])
+
+                        .then((updateRoleAnswer) => {
+                            //This is to check that the values were pulling through correctly
+                            console.log(updateRoleAnswer);
+                            updateEmployeeRole(updateRoleAnswer);
+                        })
+                        .catch((error) => console.error(error))
+                })
+        })
+};
+
 function viewAllDepartments() {
     db.query("SELECT * FROM department", function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
@@ -259,29 +316,29 @@ function viewAllRoles() {
 function viewAllEmployees() {
 
     //FIGURE OUT WHY THIS ISN'T PRINTING
+    const viewEmployeesQuery = `SELECT e.id AS employee_id, e.first_name, e.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name, " ", m.last_name) AS Manager
+    FROM employee e
+    JOIN role ON e.role_id = role.id
+    JOIN department ON department.id = role.department_id
+    LEFT JOIN employee m ON e.manager_id = m.id;
+    `
+    db.query(viewEmployeesQuery, function (err, results) {
+        console.log(results);
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err : console.table(results);
+        showQuestions();
+    })
 
-    db.promise().query(
-        `SELECT employee.id AS employee_id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT (m.first_name, " ", m.last_name) AS Manager
-        FROM employee
-        JOIN role ON employee.id = role.id
-        JOIN department ON department.id = role.department_id
-        LEFT JOIN employee m ON m.manager_id = employee.id;
-        `), function (err, results) {
-            console.log(results);
-            //UNCOMMENT AFTER YOU'RE DONE TESTING
-            // err ? console.err : console.table(`\n`, results, `\n`);
-            err ? console.err : console.table(results);
-        }
-    showQuestions();
 };
 
 function addDepartment(deptQAnswer) {
     console.log(deptQAnswer);
-    const sqlQuery = `
+    const addDeptQuery = `
     INSERT INTO department (name)
     VALUES (?)`;
-    const params = deptQAnswer.departmentName;
-    db.promise().query(sqlQuery, params, function (err, results) {
+    const deptParams = deptQAnswer.departmentName;
+    db.promise().query(addDeptQuery, deptParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
@@ -292,33 +349,31 @@ function addDepartment(deptQAnswer) {
 
 function addRole(roleQAnswer) {
     console.log(roleQAnswer);
-    const sqlQuery = `
+    const roleQuery = `
     INSERT INTO role (title, salary, department_id)
     VALUES (?, ? , ?);`;
     const roleParams = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts]
     // const params = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts];
     // const params = [null, "Customer Service", 60000, null];
     console.log(roleParams);
-    db.query(sqlQuery, roleParams, function (err, results) {
+    db.query(roleQuery, roleParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         console.log(results);
         err ? console.err : console.table(results);
-
-        showQuestions();
-    }
-    )
+    })
+    showQuestions();
 };
 
 function addEmployee(employeeQAnswer) {
     console.log(employeeQAnswer);
-    const sqlQuery = `
+    const employeeQuery = `
     INSERT INTO employee (first_name, last_name, role_id, manager_id)
     VALUES (?, ? , ?, ?);`;
     const employeeParams = [employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, employeeQAnswer.chooseRole, employeeQAnswer.chooseManager];
     //This is to check that the values were pulling through correctly
     // console.log(employeeParams);
-    db.promise().query(sqlQuery, employeeParams, function (err, results) {
+    db.promise().query(employeeQuery, employeeParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         console.log(results)
         // err ? console.err : console.table(`\n`, results, `\n`);
@@ -327,16 +382,23 @@ function addEmployee(employeeQAnswer) {
     showQuestions();
 };
 
-// function updateEmployeeRole() {
-//     db.query("UPDATE role FROM department", function (err, results) {
-//         //UNCOMMENT AFTER YOU'RE DONE TESTING
-//         // err ? console.err : console.table(`\n`, results, `\n`);
-//         err ? console.err : console.table(results);
+function updateEmployeeRole(updateRoleAnswer) {
+    console.log(updateRoleAnswer)
+    const updateRoleQuery = `
+UPDATE employee
+SET role_id = ?
+WHERE id = ?;
+    `;
+    const updateRoleParams = [updateRoleAnswer.updateRole, updateRoleAnswer.chooseEmployee];
+    console.log(updateRoleParams);
+    db.query(updateRoleQuery, updateRoleParams, function (err, results) {
+        //UNCOMMENT AFTER YOU'RE DONE TESTING
+        // err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err : console.table(results);
+        showQuestions();
+    })
 
-//         showQuestions();
-//     }
-//     )
-// };
+};
 
 const showQuestions = () => {
     return init();
