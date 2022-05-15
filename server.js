@@ -7,6 +7,7 @@ const db = require("./config/connection");
 //require dotenv package to keep database access credentials secure
 require('dotenv').config();
 
+//inquirer prompt questions
 const askQuestions = async () => {
 
     await inquirer
@@ -24,46 +25,54 @@ const askQuestions = async () => {
                     "Update an employee's role.",
                     "Quit."],
             }])
-        //switch case?
+
         .then((answer) => {
             switch (answer.chooseOption) {
                 case "View all deaprtments.":
-                    //function to view departments - query to view departments.
+                    //function/query view departments.
                     viewAllDepartments();
-                    // askQuestions;
                     break;
 
                 case "View all roles.":
+                    //function/query to view roles.
                     viewAllRoles();
-                    // askQuestions();
                     break;
 
                 case "View all employees.":
+                    //function/query to view employees.
                     viewAllEmployees();
                     break;
 
                 case "Add a department.":
+                    //function to start the add department prompts
                     addDepartmentQ();
                     break;
 
                 case "Add a role.":
+                    //function to start the add role prompts
                     addRoleQ();
                     break;
 
                 case "Add an employee.":
+                    //function to start the add employee prompts
                     addEmployeeQ();
                     break;
 
                 case "Update an employee's role.":
+                    //function to start the add department prompts
                     updateRoleQ();
                     break;
+
+                //function to quit program
                 default: quitProgram();
             }
 
         })
+        //error handling
         .catch((error) => console.error(error))
 };
 
+//add department inquirer prompts
 const addDepartmentQ = () => {
     inquirer
         .prompt([
@@ -73,34 +82,35 @@ const addDepartmentQ = () => {
                 message: "What is the Department Name?",
                 validate: (deptQAnswer) => {
                     if (!deptQAnswer) {
-                        return ("Please enter the department name.")
+                        return (`\x1b[38;5;126mPlease enter the department name.\x1b[0m`)
                     }
                     return true;
                 }
-
             }])
-        //switch case?
+
         .then((deptQAnswer) => {
-            // departmentsArray.push(deptQAnswer);
+            //function to run the addDepartment query
             addDepartment(deptQAnswer);
         })
+        //error handling
         .catch((error) => console.error(error))
 };
 
 const addRoleQ = () => {
 
+    //database query to create the array of department choices for the inquirer prompt
     db.promise().query(`SELECT * FROM department`)
         .then(([rows]) => {
 
-            // console.log(results)
-
             let departments = rows;
+            //create new mapped array to use for the inquirer choices
             const departmentChoices = departments.map(({ id, name }) => ({
                 name: name,
                 value: id
             }));
 
-            // console.log(departmentChoices, "line 117")
+            //checking to see if the variable was populated correctly
+            // console.log(departmentChoices)
 
             inquirer.prompt([
                 {
@@ -109,7 +119,7 @@ const addRoleQ = () => {
                     message: "What is the name of the role?",
                     validate: (roleQAnswer) => {
                         if (!roleQAnswer) {
-                            return ("Please enter the role name.")
+                            return (`\x1b[38;5;126mPlease enter the role name.\x1b[0m`)
                         }
                         return true;
                     }
@@ -120,52 +130,59 @@ const addRoleQ = () => {
                     message: "What is the salary for this role?",
                     validate: (roleQAnswer) => {
                         if (!roleQAnswer) {
-                            return ("Please enter the salary.")
+                            return (`\x1b[38;5;126mPlease enter the salary.\x1b[0m`)
                         }
                         return true;
-
                     }
                 },
                 {
                     type: "list",
                     name: "chooseDepts",
                     message: "Which department does this role belong to?",
-
-                    //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
                     choices: departmentChoices,
                 }])
-                //switch case?
+
                 .then((roleQAnswer) => {
+
+                    //function to run addRole database query
                     addRole(roleQAnswer);
                 })
+                //error handling
                 .catch((error) => console.error(error))
         })
 };
 
+//add employee inquirer prompts
 const addEmployeeQ = () => {
 
-    db.promise().query(`SELECT title, department_id FROM role;`)
+    //database query to create the array of role choices for the inquirer prompt
+    db.promise().query(`SELECT title, id AS role_id FROM role;`)
         .then(([role]) => {
             console.log(role);
             let roleTitles = role;
 
-            const roleChoices = roleTitles.map(({ title, department_id }) => ({
+            //create new mapped array to use for the inquirer choices
+            const roleChoices = roleTitles.map(({ title, role_id }) => ({
                 name: title,
-                value: department_id,
+                value: role_id,
             }))
             //This is to check that the values were pulling through correctly
             // console.log(roleChoices);
 
+            //database query to create the array of manager choices for the inquirer prompt
             db.promise().query(`SELECT * FROM employee WHERE manager_id IS NULL;`)
                 .then(([manager]) => {
 
                     let managerName = manager;
 
+                    //create new mapped array to use for the inquirer choices
                     const managerChoices = managerName.map(({ first_name, id }) => ({
                         name: first_name,
                         value: id,
                     }))
+                    //add a "none" option to the managerChoices array
                     managerChoices.push({ name: "None", value: null });
+
                     //This is to check that the values were pulling through correctly
                     // console.log(manager);
 
@@ -176,7 +193,7 @@ const addEmployeeQ = () => {
                             message: "What is the first name of the employee?",
                             validate: (employeeQAnswer) => {
                                 if (!employeeQAnswer) {
-                                    return ("Please enter the employee's first name.")
+                                    return (`\x1b[38;5;126mPlease enter the employee's first name.\x1b[0m`)
                                 }
                                 return true;
                             }
@@ -187,9 +204,8 @@ const addEmployeeQ = () => {
                             message: "What is the last name of the employee?",
                             validate: (employeeQAnswer) => {
                                 if (!employeeQAnswer) {
-                                    return ("Please enter the employee's last name.")
+                                    return (`\x1b[38;5;126mPlease enter the employee's last name.\x1b[0m`)
                                 }
-                                console.log(managerChoices);
                                 return true;
                             }
                         },
@@ -207,42 +223,45 @@ const addEmployeeQ = () => {
                         }])
 
                         .then((employeeQAnswer) => {
-                            //This is to check that the values were pulling through correctly
-                            // console.log(employeeQAnswer);
+
+                            //function to run addEmployee database query
                             addEmployee(employeeQAnswer);
                         })
+                        //error handling
                         .catch((error) => console.error(error))
                 })
         })
 };
 
+//update role inquirer prompt
 const updateRoleQ = () => {
 
+    //database query to obtain employee names for inquirer choices
     db.promise().query(`
     SELECT id,
     CONCAT (first_name, " ", last_name) AS name 
     FROM employee;`)
         .then(([employeeName]) => {
-            console.log(employeeName);
             let employeeNameList = employeeName;
-
+            //create new mapped array to use for the inquirer choices
             const nameChoices = employeeNameList.map(({ name, id }) => ({
                 name: name,
                 value: id,
             }))
-            console.log(nameChoices);
+            //This is to check that the values were pulling through correctly
+            // console.log(nameChoices);
 
             db.promise().query(`SELECT * FROM role;`)
                 .then(([role]) => {
-                    console.log(role);
-                    let roleIds = role;
 
+                    let roleIds = role;
+                    //create new mapped array to use for the inquirer choices
                     const updatedRoleChoices = roleIds.map(({ title, id }) => ({
                         name: title,
                         value: id,
                     }))
                     //This is to check that the values were pulling through correctly
-                    console.log(updatedRoleChoices);
+                    // console.log(updatedRoleChoices);
 
                     inquirer.prompt([
 
@@ -260,8 +279,8 @@ const updateRoleQ = () => {
                         }])
 
                         .then((updateRoleAnswer) => {
-                            //This is to check that the values were pulling through correctly
-                            console.log(updateRoleAnswer);
+
+                            //function to run updateEmployeeRole database query
                             updateEmployeeRole(updateRoleAnswer);
                         })
                         .catch((error) => console.error(error))
@@ -269,52 +288,58 @@ const updateRoleQ = () => {
         })
 };
 
+//database query to view all departments
 function viewAllDepartments() {
+
     db.query("SELECT * FROM department", function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
 
+        //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
-    }
-    )
+    })
 };
 
+//database query to view all roles
 function viewAllRoles() {
+
     db.query("SELECT * FROM role", function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
-
+        //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
-    }
-    )
+    })
 };
 
+//database query to view all employees
 function viewAllEmployees() {
 
-    //FIGURE OUT WHY THIS ISN'T PRINTING
     const viewEmployeesQuery = `SELECT e.id AS employee_id, e.first_name, e.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name, " ", m.last_name) AS Manager
     FROM employee e
     JOIN role ON e.role_id = role.id
     JOIN department ON department.id = role.department_id
-    LEFT JOIN employee m ON e.manager_id = m.id;
+    LEFT JOIN employee m ON e.manager_id = m.id
+    ORDER BY e.id ASC;
     `
     db.query(viewEmployeesQuery, function (err, results) {
         console.log(results);
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
+        //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
     })
 
 };
 
+//database query to add department
 function addDepartment(deptQAnswer) {
-    console.log(deptQAnswer);
+
     const addDeptQuery = `
-    INSERT INTO department (name)
-    VALUES (?)`;
+        INSERT INTO department (name)
+        VALUES (?)`;
     const deptParams = deptQAnswer.departmentName;
     db.promise().query(addDeptQuery, deptParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
@@ -322,77 +347,84 @@ function addDepartment(deptQAnswer) {
         err ? console.err : console.table(results);
 
     })
+    //run the show questions inquirer prompts after db.query has resolved
     showQuestions();
 };
 
+//database query to add roles
 function addRole(roleQAnswer) {
-    console.log(roleQAnswer);
+
     const roleQuery = `
-    INSERT INTO role (title, salary, department_id)
-    VALUES (?, ? , ?);`;
+        INSERT INTO role (title, salary, department_id)
+        VALUES (?, ? , ?);`;
     const roleParams = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts]
-    // const params = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts];
-    // const params = [null, "Customer Service", 60000, null];
-    console.log(roleParams);
+
     db.query(roleQuery, roleParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         console.log(results);
         err ? console.err : console.table(results);
+        //run the show questions inquirer prompts after db.query has resolved
+        showQuestions();
     })
-    showQuestions();
 };
 
+//database query to add employee
 function addEmployee(employeeQAnswer) {
-    console.log(employeeQAnswer);
+    console.log(employeeQAnswer)
     const employeeQuery = `
-    INSERT INTO employee (first_name, last_name, role_id, manager_id)
-    VALUES (?, ? , ?, ?);`;
+        INSERT INTO employee (first_name, last_name, role_id, manager_id)
+        VALUES (?, ? , ?, ?);`;
     const employeeParams = [employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, employeeQAnswer.chooseRole, employeeQAnswer.chooseManager];
-    //This is to check that the values were pulling through correctly
-    // console.log(employeeParams);
-    db.promise().query(employeeQuery, employeeParams, function (err, results) {
+    console.log(employeeParams);
+    db.query(employeeQuery, employeeParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         console.log(results)
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
+        //run the show questions inquirer prompts after db.query has resolved
+        showQuestions();
     })
-    showQuestions();
 };
 
+//database query to update employee role
 function updateEmployeeRole(updateRoleAnswer) {
     console.log(updateRoleAnswer)
     const updateRoleQuery = `
-UPDATE employee
-SET role_id = ?
-WHERE id = ?;
-    `;
+        UPDATE employee
+        SET role_id = ?
+        WHERE id = ?;
+        `;
     const updateRoleParams = [updateRoleAnswer.updateRole, updateRoleAnswer.chooseEmployee];
     console.log(updateRoleParams);
     db.query(updateRoleQuery, updateRoleParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
+        //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
     })
 
 };
 
+//function to quit program
 function quitProgram() {
     console.log(`\n\x1b[38;5;133mThank you for using the EMS!\x1b[0m\n`);
+    //close database connection
+    db.end();
+    //exit application
     process.exit(0);
 }
 
+//function to initiate the inquirer prompts
 const showQuestions = () => {
     return init();
 }
 
+//function to set up init
 const init = () => {
     askQuestions();
 }
 
+//BEGIN!!
 init();
-
-module.exports = {
-    showQuestions,
-}
