@@ -162,24 +162,26 @@ const addRoleQ = () => {
 
 const addEmployeeQ = async () => {
 
-    db.promise().query(`SELECT title FROM role;`)
-        .then(([title]) => {
-            console.log(title);
-            let roleTitles = title;
+    db.promise().query(`SELECT title, department_id FROM role;`)
+        .then(([role]) => {
+            console.log(role);
+            let roleTitles = role;
 
-            const roleChoices = roleTitles.map(({ name, title }) => ({
-                name: name,
-                value: title,
+            const roleChoices = roleTitles.map(({ title, department_id }) => ({
+                name: title,
+                value: department_id,
             }))
-            db.promise().query(`SELECT first_name FROM employee WHERE manager_id IS NULL;`)
+            console.log(roleChoices);
+
+            db.promise().query(`SELECT * FROM employee WHERE manager_id IS NULL;`)
                 .then(([manager]) => {
-                    console.log(roleChoices);
-                    console.log(manager);
+                    // console.log(roleChoices);
+                    // console.log(manager);
                     let managerName = manager;
 
-                    const managerChoices = managerName.map(({ first_name }) => ({
+                    const managerChoices = managerName.map(({ first_name, manager_id }) => ({
                         name: first_name,
-                        value: first_name,
+                        value: manager_id,
                     }))
 
 
@@ -192,59 +194,60 @@ const addEmployeeQ = async () => {
                     //             value: manager,
                     //         }))
 
-                    console.log(title, "line 203"),
-                        console.log(manager, "line 182");
-                    // console.log(getRoles, "line 205");
+                    console.log(role, "line 203"),
+                        // console.log(manager, "line 182");
+                        // console.log(getRoles, "line 205");
 
 
-                    inquirer.prompt([
-                        {
-                            type: "input",
-                            name: "employeeFirstName",
-                            message: "What is the first name of the employee?",
-                            validate: (employeeQAnswer) => {
-                                if (!employeeQAnswer) {
-                                    return ("Please enter the employee's first name.")
+                        inquirer.prompt([
+                            {
+                                type: "input",
+                                name: "employeeFirstName",
+                                message: "What is the first name of the employee?",
+                                validate: (employeeQAnswer) => {
+                                    if (!employeeQAnswer) {
+                                        return ("Please enter the employee's first name.")
+                                    }
+                                    return true;
                                 }
-                                return true;
-                            }
-                        },
-                        {
-                            type: "input",
-                            name: "employeeLastName",
-                            message: "What is the last name of the employee?",
-                            validate: (employeeQAnswer) => {
-                                if (!employeeQAnswer) {
-                                    return ("Please enter the employee's last name.")
+                            },
+                            {
+                                type: "input",
+                                name: "employeeLastName",
+                                message: "What is the last name of the employee?",
+                                validate: (employeeQAnswer) => {
+                                    if (!employeeQAnswer) {
+                                        return ("Please enter the employee's last name.")
+                                    }
+                                    console.log(managerChoices);
+                                    return true;
                                 }
-                                console.log(managerChoices);
-                                return true;
-                            }
-                        },
-                        {
-                            type: "list",
-                            name: "chooseRole",
-                            message: `What is their role?`,
+                            },
+                            {
+                                type: "list",
+                                name: "chooseRole",
+                                message: `What is their role?`,
 
-                            //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
-                            choices: roleChoices,
-                        },
-                        {
-                            type: "list",
-                            name: "employeeManagerName",
-                            message: "Who is the employee's manager?",
-                            choices: managerChoices,
-                        }])
+                                //FIX THIS SO IT LISTS ALL DEPTS AND ISN'T JUST HARDCODED
+                                choices: roleChoices,
+                            },
+                            {
+                                type: "list",
+                                name: "chooseManager",
+                                message: "Who is the employee's manager?",
+                                choices: managerChoices,
+                            }])
 
-                        //switch case?
-                        .then((employeeQAnswer) => {
-                            console.log(employeeQAnswer);
-                            addEmployee(employeeQAnswer);
-                        })
-                        .catch((error) => console.error(error))
+                            //switch case?
+                            .then((employeeQAnswer) => {
+                                // console.log(employeeQAnswer);
+                                addEmployee(employeeQAnswer);
+                            })
+                            .catch((error) => console.error(error))
                 })
         })
 };
+
 function viewAllDepartments() {
     db.query("SELECT * FROM department", function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
@@ -295,9 +298,9 @@ function addDepartment(deptQAnswer) {
 
 function addRole(roleQAnswer) {
     console.log(roleQAnswer);
-    const sqlQuery = `INSERT INTO role (id, title, salary, department_id)
-    VALUES (?, ?, ? , ?)`;
-    const roleParams = [null, roleQAnswer.roleName, roleQAnswer.roleSalary, null];
+    const sqlQuery = `INSERT INTO role (title, salary, department_id)
+    VALUES (?, ? , ?);`;
+    const roleParams = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts]
     // const params = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts];
     // const params = [null, "Customer Service", 60000, null];
     console.log(roleParams);
@@ -313,18 +316,17 @@ function addRole(roleQAnswer) {
 
 function addEmployee(employeeQAnswer) {
     console.log(employeeQAnswer);
-    const sqlQuery = `INSERT INTO employee (id, first_name, last_name, role_id)
-    VALUES (?, ?, ?, ?)`;
-    const employeeParams = [null, employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, null];
+    const sqlQuery = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+    VALUES (?, ? , ?, ?);`;
+    const employeeParams = [employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, employeeQAnswer.chooseRole, employeeQAnswer.chooseManager];
     console.log(employeeParams);
-    db.query(sqlQuery, employeeParams, function (err, results) {
+    db.promise().query(sqlQuery, employeeParams, function (err, results) {
         //UNCOMMENT AFTER YOU'RE DONE TESTING
+        console.log(results)
         // err ? console.err : console.table(`\n`, results, `\n`);
         err ? console.err : console.table(results);
-
-        showQuestions();
-    }
-    )
+    })
+    showQuestions();
 };
 
 // function updateEmployeeRole() {
