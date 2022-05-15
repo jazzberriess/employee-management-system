@@ -4,8 +4,13 @@ const inquirer = require("inquirer");
 //connect to the database
 const db = require("./config/connection");
 
+//aesthetic packages
+const consoleTable = require("console.table");
+const figlet = require("figlet");
+
 //require dotenv package to keep database access credentials secure
 require('dotenv').config();
+
 
 //inquirer prompt questions
 const askQuestions = async () => {
@@ -15,7 +20,7 @@ const askQuestions = async () => {
             {
                 type: "list",
                 name: "chooseOption",
-                message: "What would you like to do?",
+                message: "What would you like to do?\n",
                 choices: ["View all deaprtments.",
                     "View all roles.",
                     "View all employees.",
@@ -66,11 +71,12 @@ const askQuestions = async () => {
                 //function to quit program
                 default: quitProgram();
             }
-
         })
         //error handling
         .catch((error) => console.error(error))
 };
+
+//INQUIRER PROMPTS FOR EACH CATEGORY
 
 //add department inquirer prompts
 const addDepartmentQ = () => {
@@ -98,8 +104,13 @@ const addDepartmentQ = () => {
 
 const addRoleQ = () => {
 
+    //variables for the queries required to generate choices arrays
+    const addRoleQuery = (`
+        SELECT * FROM department
+        `);
+
     //database query to create the array of department choices for the inquirer prompt
-    db.promise().query(`SELECT * FROM department`)
+    db.promise().query(addRoleQuery)
         .then(([rows]) => {
 
             let departments = rows;
@@ -155,10 +166,17 @@ const addRoleQ = () => {
 //add employee inquirer prompts
 const addEmployeeQ = () => {
 
+    //variables for the queries required to generate choices arrays
+    const addEmployeeQuery = (`
+        SELECT title, id AS role_id
+        FROM role;
+    `);
+    const getManagersQuery = (`SELECT * FROM employee WHERE manager_id IS NULL;`);
+
     //database query to create the array of role choices for the inquirer prompt
-    db.promise().query(`SELECT title, id AS role_id FROM role;`)
+    db.promise().query(addEmployeeQuery)
         .then(([role]) => {
-            console.log(role);
+
             let roleTitles = role;
 
             //create new mapped array to use for the inquirer choices
@@ -170,7 +188,7 @@ const addEmployeeQ = () => {
             // console.log(roleChoices);
 
             //database query to create the array of manager choices for the inquirer prompt
-            db.promise().query(`SELECT * FROM employee WHERE manager_id IS NULL;`)
+            db.promise().query(getManagersQuery)
                 .then(([manager]) => {
 
                     let managerName = manager;
@@ -236,11 +254,19 @@ const addEmployeeQ = () => {
 //update role inquirer prompt
 const updateRoleQ = () => {
 
-    //database query to obtain employee names for inquirer choices
-    db.promise().query(`
+    //variables for the queries required to generate choices arrays
+    const updateRoleChoicesQuery = (`
     SELECT id,
     CONCAT (first_name, " ", last_name) AS name 
-    FROM employee;`)
+    FROM employee;
+    `);
+
+    const selectAllRolesQuery = (
+        `SELECT * FROM role;
+        `);
+
+    //database query to obtain employee names for inquirer choices
+    db.promise().query(updateRoleChoicesQuery)
         .then(([employeeName]) => {
             let employeeNameList = employeeName;
             //create new mapped array to use for the inquirer choices
@@ -251,7 +277,7 @@ const updateRoleQ = () => {
             //This is to check that the values were pulling through correctly
             // console.log(nameChoices);
 
-            db.promise().query(`SELECT * FROM role;`)
+            db.promise().query(selectAllRolesQuery)
                 .then(([role]) => {
 
                     let roleIds = role;
@@ -291,47 +317,54 @@ const updateRoleQ = () => {
 //database query to view all departments
 function viewAllDepartments() {
 
-    db.query("SELECT * FROM department", function (err, results) {
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        err ? console.err : console.table(results);
+    const viewAllDepartmentsQuery = (`
+        SELECT * FROM department;
+        `)
+
+    db.query(viewAllDepartmentsQuery, ((err, results) => {
+
+        err ? console.err : console.table(`\n`, results, `\n`)
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
     })
+    )
 };
 
 //database query to view all roles
 function viewAllRoles() {
 
-    db.query("SELECT * FROM role", function (err, results) {
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        err ? console.err : console.table(results);
+    const viewAllRolesQuery = (`
+    SELECT * FROM role;
+    `)
+
+    db.query(viewAllRolesQuery, ((err, results) => {
+
+        err ? console.err : console.table(`\n`, results, `\n`);
+
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
-    })
+    }))
 };
 
 //database query to view all employees
 function viewAllEmployees() {
 
-    const viewEmployeesQuery = `SELECT e.id AS employee_id, e.first_name, e.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name, " ", m.last_name) AS Manager
-    FROM employee e
-    JOIN role ON e.role_id = role.id
-    JOIN department ON department.id = role.department_id
-    LEFT JOIN employee m ON e.manager_id = m.id
-    ORDER BY e.id ASC;
+    const viewEmployeesQuery = `
+        SELECT e.id AS employee_id, e.first_name, e.last_name, role.title, department.name AS department, role.salary, CONCAT(m.first_name, " ", m.last_name) AS Manager
+        FROM employee e
+        JOIN role ON e.role_id = role.id
+        JOIN department ON department.id = role.department_id
+        LEFT JOIN employee m ON e.manager_id = m.id
+        ORDER BY e.id ASC;
     `
-    db.query(viewEmployeesQuery, function (err, results) {
-        console.log(results);
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        err ? console.err : console.table(results);
+    db.query(viewEmployeesQuery, ((err, results) => {
+
+        err ? console.err : console.table(`\n`, results, `\n`);
+
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
-    })
-
+    }))
 };
 
 //database query to add department
@@ -341,14 +374,14 @@ function addDepartment(deptQAnswer) {
         INSERT INTO department (name)
         VALUES (?)`;
     const deptParams = deptQAnswer.departmentName;
-    db.promise().query(addDeptQuery, deptParams, function (err, results) {
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        err ? console.err : console.table(results);
 
-    })
-    //run the show questions inquirer prompts after db.query has resolved
-    showQuestions();
+    db.query(addDeptQuery, deptParams, ((err, results) => {
+
+        err ? console.err : console.log(`\n Success! ${deptQAnswer.departmentName} added to the database.\n`);
+
+        //run the show questions inquirer prompts after db.query has resolved
+        showQuestions();
+    }))
 };
 
 //database query to add roles
@@ -359,51 +392,48 @@ function addRole(roleQAnswer) {
         VALUES (?, ? , ?);`;
     const roleParams = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts]
 
-    db.query(roleQuery, roleParams, function (err, results) {
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        console.log(results);
-        err ? console.err : console.table(results);
+    db.query(roleQuery, roleParams, ((err, results) => {
+
+        err ? console.err : console.log(`\n Success! ${roleQAnswer.roleName} added to database.\n ${results.info}\n`);
+
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
-    })
+    }))
 };
 
 //database query to add employee
 function addEmployee(employeeQAnswer) {
-    console.log(employeeQAnswer)
+
     const employeeQuery = `
         INSERT INTO employee (first_name, last_name, role_id, manager_id)
         VALUES (?, ? , ?, ?);`;
     const employeeParams = [employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, employeeQAnswer.chooseRole, employeeQAnswer.chooseManager];
-    console.log(employeeParams);
-    db.query(employeeQuery, employeeParams, function (err, results) {
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        console.log(results)
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        err ? console.err : console.table(results);
+
+    db.query(employeeQuery, employeeParams, ((err, results) => {
+
+        err ? console.err : console.log(`\n Success! ${employeeQAnswer.employeeFirstName} ${employeeQAnswer.employeeLastName} added to database.\n`);
+
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
-    })
+    }))
 };
 
 //database query to update employee role
 function updateEmployeeRole(updateRoleAnswer) {
-    console.log(updateRoleAnswer)
+
     const updateRoleQuery = `
         UPDATE employee
         SET role_id = ?
         WHERE id = ?;
         `;
     const updateRoleParams = [updateRoleAnswer.updateRole, updateRoleAnswer.chooseEmployee];
-    console.log(updateRoleParams);
-    db.query(updateRoleQuery, updateRoleParams, function (err, results) {
-        //UNCOMMENT AFTER YOU'RE DONE TESTING
-        // err ? console.err : console.table(`\n`, results, `\n`);
-        err ? console.err : console.table(results);
+
+    db.query(updateRoleQuery, updateRoleParams, ((err, results) => {
+
+        err ? console.err : console.table(`\n Success!\n ${results.info}\n`);
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
-    })
+    }))
 
 };
 
@@ -426,5 +456,33 @@ const init = () => {
     askQuestions();
 }
 
-//BEGIN!!
-init();
+//BEGIN!! Figlet npm to make a pretty title.
+figlet("EMS", (err, data) => {
+    if (err) {
+        console.error(err);
+        return;
+    }
+    console.log(`\n`, data, `\n`);
+    console.log(`Welcome to the Employee Management System\n`)
+
+    //inquirer prompt to start app or quit
+    inquirer.prompt([
+        {
+            type: "list",
+            name: "startApp",
+            message: "Would you like to start the EMS (Employee Management System?",
+            choices: ["Yes", "No"],
+        }
+    ])
+        .then((answer) => {
+            switch (answer.startApp) {
+                case "Yes":
+                    //function/query view departments.
+                    askQuestions();
+                    break;
+
+                default: quitProgram();
+            }
+        })
+});
+
