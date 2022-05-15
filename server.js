@@ -1,35 +1,13 @@
 //Required modules
-
 const inquirer = require("inquirer");
-// const {
-//     viewAllDepartments,
-//     viewAllRoles,
-//     viewAllEmployees,
-//     addDepartment,
-//     addRole,
-//     addEmployee,
-// } = require("./src/helpers/queries");
-// const util = require('util');
 
+//connect to the database
 const db = require("./config/connection");
-// const mysql = require("mysql2");
-// const { title } = require("process");
 
-// const consoleTable = require("console.table");
-
-
-// const { addDepartmentQ } = require("./src/helpers/inquirer")
-//dont need to require - just use like you would a console.log
-
-
-//require dotenv package to keep sql access credentials secure
+//require dotenv package to keep database access credentials secure
 require('dotenv').config();
 
-// let allDepts = [];
-// let allDeptsNames = allDepts.name;
-
 const askQuestions = async () => {
-    // function askQuestions() {
 
     await inquirer
         .prompt([
@@ -79,7 +57,7 @@ const askQuestions = async () => {
                 case "Update an employee's role.":
                     updateRoleQ();
                     break;
-                default: console.log("Default")
+                default: quitProgram();
             }
 
         })
@@ -399,6 +377,11 @@ WHERE id = ?;
     })
 
 };
+
+function quitProgram() {
+    console.log(`\n\x1b[38;5;133mThank you for using the EMS!\x1b[0m\n`);
+    process.exit(0);
+}
 
 const showQuestions = () => {
     return init();
