@@ -24,6 +24,7 @@ const askQuestions = async () => {
                 choices: ["View all deaprtments.",
                     "View all roles.",
                     "View all employees.",
+                    "View employees by manager.",
                     "Add a department.",
                     "Add a role.",
                     "Add an employee.",
@@ -46,6 +47,11 @@ const askQuestions = async () => {
                 case "View all employees.":
                     //function/query to view employees.
                     viewAllEmployees();
+                    break;
+
+                case "View employees by manager.":
+                    //function/query to view employees.
+                    viewEmployeesManagerQ();
                     break;
 
                 case "Add a department.":
@@ -77,6 +83,48 @@ const askQuestions = async () => {
 };
 
 //INQUIRER PROMPTS FOR EACH CATEGORY
+
+const viewEmployeesManagerQ = () => {
+
+    //variables for the queries required to generate choices arrays
+    const selectManagersQuery = (`
+        SELECT id,
+        CONCAT (first_name, " ", last_name) AS manager_name 
+        FROM employee
+        WHERE manager_id IS NULL;
+        `);
+
+    //database query to obtain manager names for inquirer choices
+    db.promise().query(selectManagersQuery)
+        .then(([employeeName]) => {
+
+            let employeeNameList = employeeName;
+            //create new mapped array to use for the inquirer choices
+            const nameChoices = employeeNameList.map(({ manager_name, id }) => ({
+                name: manager_name,
+                value: id,
+            }))
+
+            //This is to check that the values were pulling through correctly
+            // console.log(nameChoices);
+
+            inquirer.prompt([
+                {
+                    type: "list",
+                    name: "chooseEmployee",
+                    message: `Which manager's employees do you want to view?`,
+                    choices: nameChoices,
+                }
+            ])
+                .then((viewByManagerAnswer) => {
+
+                    console.log(viewByManagerAnswer, "line 120");
+                    //function to run updateEmployeeRole database query
+                    viewEmployeesManager(viewByManagerAnswer);
+                })
+                .catch((error) => console.error(error))
+        })
+};
 
 //add department inquirer prompts
 const addDepartmentQ = () => {
@@ -323,6 +371,7 @@ function viewAllDepartments() {
 
     db.query(viewAllDepartmentsQuery, ((err, results) => {
 
+        console.log(results);
         err ? console.err : console.table(`\n`, results, `\n`)
 
         //run the show questions inquirer prompts after db.query has resolved
@@ -360,6 +409,25 @@ function viewAllEmployees() {
     `
     db.query(viewEmployeesQuery, ((err, results) => {
 
+        err ? console.err : console.table(`\n`, results, `\n`);
+
+        //run the show questions inquirer prompts after db.query has resolved
+        showQuestions();
+    }))
+};
+
+//database query to view employees by manager
+function viewEmployeesManager(viewByManagerAnswer) {
+
+    const selectAllEmployeesQuery = (
+        `SELECT * FROM employee
+        WHERE manager_id = ?;
+        `);
+    const params = [viewByManagerAnswer.chooseEmployee];
+
+    db.query(selectAllEmployeesQuery, params, ((err, results) => {
+        console.log(params);
+        console.log(results);
         err ? console.err : console.table(`\n`, results, `\n`);
 
         //run the show questions inquirer prompts after db.query has resolved
@@ -462,8 +530,8 @@ figlet("EMS", (err, data) => {
         console.error(err);
         return;
     }
-    console.log(`\n`, data, `\n`);
-    console.log(`Welcome to the Employee Management System\n`)
+    console.log(`\x1b[38;5;25m${data}\n Welcome to the Employee Management System\x1b[0m`);
+    // console.log(`\x1b[38;5;256mWelcome to the Employee Management System\x1b[0m`)
 
     //inquirer prompt to start app or quit
     inquirer.prompt([
