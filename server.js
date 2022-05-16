@@ -29,8 +29,8 @@ const askQuestions = async () => {
                     "Add a department.",
                     "Add a role.",
                     "Add an employee.",
-                    "Calculate department budget.",
                     "Update an employee's role.",
+                    "Delete an employee.",
                     "Quit."],
             }])
 
@@ -76,14 +76,13 @@ const askQuestions = async () => {
                     addEmployeeQ();
                     break;
 
-                case "Calculate department budget.":
-                    //function to start the add employee prompts
-                    viewDeptBudgetQ();
-                    break;
-
                 case "Update an employee's role.":
                     //function to start the add department prompts
                     updateRoleQ();
+                    break;
+
+                case "Delete an employee.":
+                    deleteEmployeesQ();
                     break;
 
                 //function to quit program
@@ -350,44 +349,6 @@ const addEmployeeQ = () => {
         })
 };
 
-const viewDeptBudgetQ = () => {
-
-    //variables for the queries required to generate choices arrays
-    const selectDeptBudgetQuery = (`
-    SELECT name AS department_name, id FROM department;
-    `)
-
-    //database query to obtain manager names for inquirer choices
-    db.promise().query(selectDeptBudgetQuery)
-        .then(([departmentName]) => {
-
-            let departmentList = departmentName;
-            //create new mapped array to use for the inquirer choices
-            const deptChoices = departmentList.map(({ department_name, id }) => ({
-                name: id + " " + department_name,
-                value: department_name,
-            }))
-
-            //This is to check that the values were pulling through correctly
-            // console.log(deptChoices);
-
-            inquirer.prompt([
-                {
-                    type: "list",
-                    name: "chooseDepartment",
-                    message: `Which department's budget do you want to view?`,
-                    choices: deptChoices,
-                }
-            ])
-                .then((viewDeptBudgetAnswer) => {
-
-                    //function to run updateEmployeeRole database query
-                    departmentBudget(viewDeptBudgetAnswer);
-                })
-                .catch((error) => console.error(error))
-        })
-};
-
 //update role inquirer prompt
 const updateRoleQ = () => {
 
@@ -448,6 +409,47 @@ const updateRoleQ = () => {
                         })
                         .catch((error) => console.error(error))
                 })
+        })
+};
+
+const deleteEmployeesQ = () => {
+
+    //variables for the queries required to generate choices arrays
+    const deleteEmployeesQuery = (`
+        SELECT id,
+        CONCAT (first_name, " ", last_name) AS employee_name 
+        FROM employee;
+        `);
+
+    //database query to obtain manager names for inquirer choices
+    db.promise().query(deleteEmployeesQuery)
+        .then(([employeeName]) => {
+
+            let employeeNameList = employeeName;
+            //create new mapped array to use for the inquirer choices
+            const nameChoices = employeeNameList.map(({ employee_name, id }) => ({
+                name: employee_name,
+                value: id,
+            }))
+
+            //This is to check that the values were pulling through correctly
+            // console.log(nameChoices);
+
+            inquirer.prompt([
+                {
+                    type: "list",
+                    name: "chooseEmployee",
+                    message: `Which employee do you want to delete?`,
+                    choices: nameChoices,
+                }
+            ])
+
+                .then((deleteEmployeesAnswer) => {
+
+                    //function to run updateEmployeeRole database query
+                    deleteEmployees(deleteEmployeesAnswer);
+                })
+                .catch((error) => console.error(error))
         })
 };
 
@@ -597,71 +599,6 @@ function addEmployee(employeeQAnswer) {
     }))
 };
 
-function departmentBudget(viewDeptBudgetAnswer) {
-
-    const budgetQuery =
-        // (`
-        //     SELECT e.first_name, e.last_name, role.title, role.salary, department.name AS department
-        //     FROM employee e
-        //     JOIN role ON e.role_id = role.id
-        //     JOIN department ON department.id = role.department_id
-        //     WHERE role.department_id = ?
-        //     ORDER BY e.id ASC;
-        //     `);
-        //     (`
-        // SELECT department.id, SUM (role.salary) AS department_budget
-        // FROM role
-        // GROUP BY department;
-        // `)
-        //     (`
-        // SELECT e.role_id, r.id AS id_role, r.salary
-        // FROM employee e
-        // JOIN e.role_id
-        // ON e.role_ir = id_role;
-        // `)
-
-        // (`SELECT employee.first_name, SUM(salary)
-        // FROM employee department, role
-        // WHERE department.name = ?;`);
-
-        (`SUM(salary) budget
-        FROM role employee
-        JOIN role 
-        ON employee
-        WHERE e.role_id = 1;`);
-
-    // SELECT e.first_name, e.last_name, role.title, department.name AS department
-    // FROM employee e
-    // JOIN role ON e.role_id = role.id
-    // JOIN department ON department.id = role.department_id
-    // WHERE role.department_id = ?
-    // ORDER BY e.id ASC;
-
-    // (`SELECT e.role_id, department.name  SUM(salary) budget
-    // FROM employee
-    // INNER JOIN department d ON department.name = ?
-    // GROUP BY e.role_id;`);
-
-    // (`SELECT title, SUM(salary)
-    // FROM role
-    // WHERE department_id = ?;`);
-
-    const params = [viewDeptBudgetAnswer.chooseDepartment];
-
-    console.log(viewDeptBudgetAnswer);
-    console.log(params);
-
-    db.query(budgetQuery, params, ((err, results) => {
-
-        console.log(results);
-
-        err ? console.err : console.table(`\n`, `\x1b[1;4;38;5;133mView Budget by Department - ${viewDeptBudgetAnswer.chooseDepartment}\x1b[0m`, `\n`, results, `\n`);
-
-        //run the show questions inquirer prompts after db.query has resolved
-        showQuestions();
-    }))
-};
-
 //database query to update employee role
 function updateEmployeeRole(updateRoleAnswer) {
 
@@ -679,6 +616,23 @@ function updateEmployeeRole(updateRoleAnswer) {
         showQuestions();
     }))
 
+};
+
+function deleteEmployees(deleteEmployeesAnswer) {
+
+    const deleteEmployeeQuery = (
+        `DELETE FROM employee
+        WHERE employee.id = ?;
+        `);
+    const params = [deleteEmployeesAnswer.chooseEmployee];
+
+    db.query(deleteEmployeeQuery, params, ((err, results) => {
+
+        err ? console.err("Oops! No managers to view.") : console.table(`\n`, `\x1b[1;4;38;5;133mEmployee Deleted\x1b[0m`, `\n`, results, `\n`);
+
+        //run the show questions inquirer prompts after db.query has resolved
+        showQuestions();
+    }))
 };
 
 //function to quit program
