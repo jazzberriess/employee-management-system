@@ -25,9 +25,11 @@ const askQuestions = async () => {
                     "View all roles.",
                     "View all employees.",
                     "View employees by manager.",
+                    "View employees by department.",
                     "Add a department.",
                     "Add a role.",
                     "Add an employee.",
+                    "Calculate department budget.",
                     "Update an employee's role.",
                     "Quit."],
             }])
@@ -54,6 +56,11 @@ const askQuestions = async () => {
                     viewEmployeesManagerQ();
                     break;
 
+                case "View employees by department.":
+                    //function/query to view employees.
+                    viewEmployeesByDeptQ();
+                    break;
+
                 case "Add a department.":
                     //function to start the add department prompts
                     addDepartmentQ();
@@ -67,6 +74,11 @@ const askQuestions = async () => {
                 case "Add an employee.":
                     //function to start the add employee prompts
                     addEmployeeQ();
+                    break;
+
+                case "Calculate department budget.":
+                    //function to start the add employee prompts
+                    viewDeptBudgetQ();
                     break;
 
                 case "Update an employee's role.":
@@ -116,11 +128,50 @@ const viewEmployeesManagerQ = () => {
                     choices: nameChoices,
                 }
             ])
+
                 .then((viewByManagerAnswer) => {
 
-                    console.log(viewByManagerAnswer, "line 120");
                     //function to run updateEmployeeRole database query
                     viewEmployeesManager(viewByManagerAnswer);
+                })
+                .catch((error) => console.error(error))
+        })
+};
+
+const viewEmployeesByDeptQ = () => {
+
+    //variables for the queries required to generate choices arrays
+    const selectDeptQuery = (`
+    SELECT name AS department_name, id FROM department;
+    `)
+
+    //database query to obtain manager names for inquirer choices
+    db.promise().query(selectDeptQuery)
+        .then(([departmentName]) => {
+
+            let departmentList = departmentName;
+            //create new mapped array to use for the inquirer choices
+            const deptChoices = departmentList.map(({ department_name, id }) => ({
+                name: department_name,
+                value: id,
+            }))
+
+            //This is to check that the values were pulling through correctly
+            // console.log(deptChoices);
+
+            inquirer.prompt([
+                {
+                    type: "list",
+                    name: "chooseDepartment",
+                    message: `Which department's employees do you want to view?`,
+                    choices: deptChoices,
+                }
+            ])
+
+                .then((viewDeptEmployeesAnswer) => {
+
+                    //function to run updateEmployeeRole database query
+                    viewEmployeesDept(viewDeptEmployeesAnswer);
                 })
                 .catch((error) => console.error(error))
         })
@@ -299,6 +350,44 @@ const addEmployeeQ = () => {
         })
 };
 
+const viewDeptBudgetQ = () => {
+
+    //variables for the queries required to generate choices arrays
+    const selectDeptBudgetQuery = (`
+    SELECT name AS department_name, id FROM department;
+    `)
+
+    //database query to obtain manager names for inquirer choices
+    db.promise().query(selectDeptBudgetQuery)
+        .then(([departmentName]) => {
+
+            let departmentList = departmentName;
+            //create new mapped array to use for the inquirer choices
+            const deptChoices = departmentList.map(({ department_name, id }) => ({
+                name: id + " " + department_name,
+                value: department_name,
+            }))
+
+            //This is to check that the values were pulling through correctly
+            // console.log(deptChoices);
+
+            inquirer.prompt([
+                {
+                    type: "list",
+                    name: "chooseDepartment",
+                    message: `Which department's budget do you want to view?`,
+                    choices: deptChoices,
+                }
+            ])
+                .then((viewDeptBudgetAnswer) => {
+
+                    //function to run updateEmployeeRole database query
+                    departmentBudget(viewDeptBudgetAnswer);
+                })
+                .catch((error) => console.error(error))
+        })
+};
+
 //update role inquirer prompt
 const updateRoleQ = () => {
 
@@ -372,7 +461,7 @@ function viewAllDepartments() {
     db.query(viewAllDepartmentsQuery, ((err, results) => {
 
         console.log(results);
-        err ? console.err : console.table(`\n`, results, `\n`)
+        err ? console.err("Oops! No departments to view.") : console.table(`\n`, results, `\n`)
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -389,7 +478,7 @@ function viewAllRoles() {
 
     db.query(viewAllRolesQuery, ((err, results) => {
 
-        err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err("Oops! No departments to view.") : console.table(`\n`, results, `\n`);
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -409,7 +498,7 @@ function viewAllEmployees() {
     `
     db.query(viewEmployeesQuery, ((err, results) => {
 
-        err ? console.err : console.table(`\n`, results, `\n`);
+        err ? console.err("Oops! No employees to view.") : console.table(`\n`, `\x1b[1;4;38;5;133mView All Employees\x1b[0m`, `\n`, results, `\n`);
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -426,9 +515,31 @@ function viewEmployeesManager(viewByManagerAnswer) {
     const params = [viewByManagerAnswer.chooseEmployee];
 
     db.query(selectAllEmployeesQuery, params, ((err, results) => {
-        console.log(params);
-        console.log(results);
-        err ? console.err : console.table(`\n`, results, `\n`);
+
+        err ? console.err("Oops! No managers to view.") : console.table(`\n`, `\x1b[1;4;38;5;133mView All Employees by Manager\x1b[0m`, `\n`, results, `\n`);
+
+        //run the show questions inquirer prompts after db.query has resolved
+        showQuestions();
+    }))
+};
+
+//database query to view employees by department
+function viewEmployeesDept(viewDeptEmployeesAnswer) {
+
+    const selectAllDeptQuery = (`
+        SELECT e.first_name, e.last_name, role.title, department.name AS department
+        FROM employee e
+        JOIN role ON e.role_id = role.id
+        JOIN department ON department.id = role.department_id
+        WHERE role.department_id = ?
+        ORDER BY e.id ASC;
+        `);
+
+    const params = [viewDeptEmployeesAnswer.chooseDepartment];
+
+    db.query(selectAllDeptQuery, params, ((err, results) => {
+
+        err ? console.err("Oops! No employees to view.") : console.table(`\n`, `\x1b[1;4;38;5;133mView All Employees by Department - ${results[0].department}\x1b[0m`, `\n`, results, `\n`);
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -439,13 +550,13 @@ function viewEmployeesManager(viewByManagerAnswer) {
 function addDepartment(deptQAnswer) {
 
     const addDeptQuery = `
-        INSERT INTO department (name)
-        VALUES (?)`;
+        INSERT INTO department(name)
+    VALUES(?)`;
     const deptParams = deptQAnswer.departmentName;
 
     db.query(addDeptQuery, deptParams, ((err, results) => {
 
-        err ? console.err : console.log(`\n Success! ${deptQAnswer.departmentName} added to the database.\n`);
+        err ? console.err(err) : console.log(`\n Success! ${deptQAnswer.departmentName} added to the database.\n`);
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -456,13 +567,13 @@ function addDepartment(deptQAnswer) {
 function addRole(roleQAnswer) {
 
     const roleQuery = `
-        INSERT INTO role (title, salary, department_id)
-        VALUES (?, ? , ?);`;
+        INSERT INTO role(title, salary, department_id)
+    VALUES(?, ? , ?); `;
     const roleParams = [roleQAnswer.roleName, roleQAnswer.roleSalary, roleQAnswer.chooseDepts]
 
     db.query(roleQuery, roleParams, ((err, results) => {
 
-        err ? console.err : console.log(`\n Success! ${roleQAnswer.roleName} added to database.\n ${results.info}\n`);
+        err ? console.err(err) : console.log(`\n Success! ${roleQAnswer.roleName} added to database.\n ${results.info} \n`);
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -473,13 +584,78 @@ function addRole(roleQAnswer) {
 function addEmployee(employeeQAnswer) {
 
     const employeeQuery = `
-        INSERT INTO employee (first_name, last_name, role_id, manager_id)
-        VALUES (?, ? , ?, ?);`;
+        INSERT INTO employee(first_name, last_name, role_id, manager_id)
+    VALUES(?, ? , ?, ?); `;
     const employeeParams = [employeeQAnswer.employeeFirstName, employeeQAnswer.employeeLastName, employeeQAnswer.chooseRole, employeeQAnswer.chooseManager];
 
     db.query(employeeQuery, employeeParams, ((err, results) => {
 
-        err ? console.err : console.log(`\n Success! ${employeeQAnswer.employeeFirstName} ${employeeQAnswer.employeeLastName} added to database.\n`);
+        err ? console.err(err) : console.log(`\n Success! ${employeeQAnswer.employeeFirstName} ${employeeQAnswer.employeeLastName} added to database.\n`);
+
+        //run the show questions inquirer prompts after db.query has resolved
+        showQuestions();
+    }))
+};
+
+function departmentBudget(viewDeptBudgetAnswer) {
+
+    const budgetQuery =
+        // (`
+        //     SELECT e.first_name, e.last_name, role.title, role.salary, department.name AS department
+        //     FROM employee e
+        //     JOIN role ON e.role_id = role.id
+        //     JOIN department ON department.id = role.department_id
+        //     WHERE role.department_id = ?
+        //     ORDER BY e.id ASC;
+        //     `);
+        //     (`
+        // SELECT department.id, SUM (role.salary) AS department_budget
+        // FROM role
+        // GROUP BY department;
+        // `)
+        //     (`
+        // SELECT e.role_id, r.id AS id_role, r.salary
+        // FROM employee e
+        // JOIN e.role_id
+        // ON e.role_ir = id_role;
+        // `)
+
+        // (`SELECT employee.first_name, SUM(salary)
+        // FROM employee department, role
+        // WHERE department.name = ?;`);
+
+        (`SUM(salary) budget
+        FROM role employee
+        JOIN role 
+        ON employee
+        WHERE e.role_id = 1;`);
+
+    // SELECT e.first_name, e.last_name, role.title, department.name AS department
+    // FROM employee e
+    // JOIN role ON e.role_id = role.id
+    // JOIN department ON department.id = role.department_id
+    // WHERE role.department_id = ?
+    // ORDER BY e.id ASC;
+
+    // (`SELECT e.role_id, department.name  SUM(salary) budget
+    // FROM employee
+    // INNER JOIN department d ON department.name = ?
+    // GROUP BY e.role_id;`);
+
+    // (`SELECT title, SUM(salary)
+    // FROM role
+    // WHERE department_id = ?;`);
+
+    const params = [viewDeptBudgetAnswer.chooseDepartment];
+
+    console.log(viewDeptBudgetAnswer);
+    console.log(params);
+
+    db.query(budgetQuery, params, ((err, results) => {
+
+        console.log(results);
+
+        err ? console.err : console.table(`\n`, `\x1b[1;4;38;5;133mView Budget by Department - ${viewDeptBudgetAnswer.chooseDepartment}\x1b[0m`, `\n`, results, `\n`);
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -493,12 +669,12 @@ function updateEmployeeRole(updateRoleAnswer) {
         UPDATE employee
         SET role_id = ?
         WHERE id = ?;
-        `;
+    `;
     const updateRoleParams = [updateRoleAnswer.updateRole, updateRoleAnswer.chooseEmployee];
 
     db.query(updateRoleQuery, updateRoleParams, ((err, results) => {
 
-        err ? console.err : console.table(`\n Success!\n ${results.info}\n`);
+        err ? console.err(err) : console.table(`\n Success!\n ${results.info} \n`);
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
     }))
@@ -507,7 +683,7 @@ function updateEmployeeRole(updateRoleAnswer) {
 
 //function to quit program
 function quitProgram() {
-    console.log(`\n\x1b[38;5;133mThank you for using the EMS!\x1b[0m\n`);
+    console.log(`\n`, `\x1b[1;38; 5; 133mThank you for using the EMS!\x1b[0m`, `\n`);
     //close database connection
     db.end();
     //exit application
@@ -530,8 +706,8 @@ figlet("EMS", (err, data) => {
         console.error(err);
         return;
     }
-    console.log(`\x1b[38;5;25m${data}\n Welcome to the Employee Management System\x1b[0m`);
-    // console.log(`\x1b[38;5;256mWelcome to the Employee Management System\x1b[0m`)
+    console.log(`\x1b[1;38; 5; 25m${data} \n Welcome to the Employee Management System\x1b[0m`);
+    // console.log(`\x1b[38; 5; 256mWelcome to the Employee Management System\x1b[0m`)
 
     //inquirer prompt to start app or quit
     inquirer.prompt([
