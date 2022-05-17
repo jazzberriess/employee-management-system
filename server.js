@@ -93,7 +93,7 @@ const askQuestions = async () => {
         .catch((error) => console.error(error))
 };
 
-//INQUIRER PROMPTS FOR EACH CATEGORY
+//INQUIRER PROMPTS/QUESTIONS FOR EACH CATEGORY
 
 const viewEmployeesManagerQ = () => {
 
@@ -130,7 +130,7 @@ const viewEmployeesManagerQ = () => {
 
                 .then((viewByManagerAnswer) => {
 
-                    //function to run updateEmployeeRole database query
+                    //function to run viewEmployeesManager database query
                     viewEmployeesManager(viewByManagerAnswer);
                 })
                 .catch((error) => console.error(error))
@@ -144,7 +144,7 @@ const viewEmployeesByDeptQ = () => {
     SELECT name AS department_name, id FROM department;
     `)
 
-    //database query to obtain manager names for inquirer choices
+    //database query to obtain department names for inquirer choices
     db.promise().query(selectDeptQuery)
         .then(([departmentName]) => {
 
@@ -169,7 +169,7 @@ const viewEmployeesByDeptQ = () => {
 
                 .then((viewDeptEmployeesAnswer) => {
 
-                    //function to run updateEmployeeRole database query
+                    //function to run viewEmployeesDept database query
                     viewEmployeesDept(viewDeptEmployeesAnswer);
                 })
                 .catch((error) => console.error(error))
@@ -200,6 +200,7 @@ const addDepartmentQ = () => {
         .catch((error) => console.error(error))
 };
 
+//add role inquirer prompts
 const addRoleQ = () => {
 
     //variables for the queries required to generate choices arrays
@@ -367,6 +368,7 @@ const updateRoleQ = () => {
     db.promise().query(updateRoleChoicesQuery)
         .then(([employeeName]) => {
             let employeeNameList = employeeName;
+
             //create new mapped array to use for the inquirer choices
             const nameChoices = employeeNameList.map(({ name, id }) => ({
                 name: name,
@@ -412,6 +414,7 @@ const updateRoleQ = () => {
         })
 };
 
+//delete employee inquirer prompts
 const deleteEmployeesQ = () => {
 
     //variables for the queries required to generate choices arrays
@@ -421,7 +424,7 @@ const deleteEmployeesQ = () => {
         FROM employee;
         `);
 
-    //database query to obtain manager names for inquirer choices
+    //database query to obtain employee names for inquirer choices
     db.promise().query(deleteEmployeesQuery)
         .then(([employeeName]) => {
 
@@ -446,7 +449,7 @@ const deleteEmployeesQ = () => {
 
                 .then((deleteEmployeesAnswer) => {
 
-                    //function to run updateEmployeeRole database query
+                    //function to run deleteEmployee database query
                     deleteEmployees(deleteEmployeesAnswer);
                 })
                 .catch((error) => console.error(error))
@@ -628,7 +631,7 @@ function deleteEmployees(deleteEmployeesAnswer) {
 
     db.query(deleteEmployeeQuery, params, ((err, results) => {
 
-        err ? console.err("Oops! No managers to view.") : console.table(`\n`, `\x1b[1;4;38;5;133mEmployee Deleted\x1b[0m`, `\n`, results, `\n`);
+        err ? console.err("Oops! No employees to delete.") : console.log(`\n`, `\x1b[1;4;38;5;133mEmployee Deleted\x1b[0m`, `\n`);
 
         //run the show questions inquirer prompts after db.query has resolved
         showQuestions();
@@ -637,7 +640,7 @@ function deleteEmployees(deleteEmployeesAnswer) {
 
 //function to quit program
 function quitProgram() {
-    console.log(`\n`, `\x1b[1;38; 5; 133mThank you for using the EMS!\x1b[0m`, `\n`);
+    console.log(`\n`, `\x1b[1;38;5;74mThank you for using the EMS!\x1b[0m`, `\n`);
     //close database connection
     db.end();
     //exit application
@@ -655,12 +658,12 @@ const init = () => {
 }
 
 //BEGIN!! Figlet npm to make a pretty title.
-figlet("EMS", (err, data) => {
+figlet.text("EMS", (err, data) => {
     if (err) {
         console.error(err);
         return;
     }
-    console.log(`\x1b[1;38; 5; 25m${data} \n Welcome to the Employee Management System\x1b[0m`);
+    console.log(`\x1b[1;38;5;74m${data} \nWelcome to the Employee Management System\x1b[0m \n`);
     // console.log(`\x1b[38; 5; 256mWelcome to the Employee Management System\x1b[0m`)
 
     //inquirer prompt to start app or quit
