@@ -270,7 +270,10 @@ const addEmployeeQ = () => {
         SELECT title, id AS role_id
         FROM role;
     `);
-    const getManagersQuery = (`SELECT * FROM employee WHERE manager_id IS NULL;`);
+    const getManagersQuery = (`SELECT id, first_name, last_name,
+    CONCAT(first_name, " ", last_name) AS manager_name
+    FROM employee 
+    WHERE manager_id IS NULL;`);
 
     //database query to create the array of role choices for the inquirer prompt
     db.promise().query(addEmployeeQuery)
@@ -293,8 +296,8 @@ const addEmployeeQ = () => {
                     let managerName = manager;
 
                     //create new mapped array to use for the inquirer choices
-                    const managerChoices = managerName.map(({ first_name, id }) => ({
-                        name: first_name,
+                    const managerChoices = managerName.map(({ manager_name, id }) => ({
+                        name: manager_name,
                         value: id,
                     }))
                     //add a "none" option to the managerChoices array
@@ -465,7 +468,6 @@ function viewAllDepartments() {
 
     db.query(viewAllDepartmentsQuery, ((err, results) => {
 
-        console.log(results);
         err ? console.err("Oops! No departments to view.") : console.table(`\n`, results, `\n`)
 
         //run the show questions inquirer prompts after db.query has resolved

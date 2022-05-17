@@ -17,11 +17,11 @@
  
 
  INSERT INTO employee (id, first_name, last_name, role_id, manager_id)
- VALUES (1, "Aerith", "Gainsborough", 7, NULL),
-        (2, "Cmot", "Dibbler", 8, 1),
+ VALUES (1, "Aerith", "Gainsborough", 1, NULL),
+        (2, "Cmot", "Dibbler", 2, 1),
         (3, "Tony", "Stark", 3, NULL),
-        (4, "Katie 'Pidge' ", "Holt", 2, 3),
+        (4, "Katie 'Pidge'", "Holt", 4, 3),
         (5, "Seto", "Kaiba", 5, NULL),
         (6, "Skyler", "White", 6, 5),
-        (7, "Miles", "Edgeworth", 1, NULL),
-        (8, "Phoenix", "Wright", 4, 7);
+        (7, "Miles", "Edgeworth", 7, NULL),
+        (8, "Phoenix", "Wright", 8, 7);
